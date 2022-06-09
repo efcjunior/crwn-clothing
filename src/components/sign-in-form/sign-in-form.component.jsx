@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import {
   createUserDocumentFromAuth,
   signAuthUserWithEmailAndPassword,
   signInWithGooglePopup,
-} from "../../routes/utils/firebase/firebase.utils";
+} from "../../utils/firebase/firebase.utils";
 import Button from "../button/button.component";
 import FormInput from "../form-input/form-input.component";
+import { UserContext } from "../../contexts/user.context";
 import "./sign-in-form.styles.scss";
 
 const SignInForm = () => {
@@ -16,16 +17,24 @@ const SignInForm = () => {
 
   const [formFields, setFormFields] = useState(defaultFormFields);
   const { email, password } = formFields;
+  const { setCurrentUser } = useContext(UserContext);
 
   const resetFormFields = () => {
     setFormFields(defaultFormFields);
+  };
+
+  const signInWithGoogle = async () => {
+    const { user } = await signInWithGooglePopup();
+    setCurrentUser(user);
+    await createUserDocumentFromAuth(user);
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     try {
-      await signAuthUserWithEmailAndPassword(email, password);
+      const { user } = await signAuthUserWithEmailAndPassword(email, password);
+      setCurrentUser(user);
       resetFormFields();
     } catch (error) {
       switch (error.code) {
@@ -46,12 +55,7 @@ const SignInForm = () => {
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormFields({ ...formFields, [name]: value });
-  };
-
-  const logGoogleUser = async () => {
-    const { user } = await signInWithGooglePopup();
-    await createUserDocumentFromAuth(user);
-  };
+  };  
 
   return (
     <div className="sign-in-container">
@@ -77,7 +81,7 @@ const SignInForm = () => {
         />
         <div className="buttons-container">
           <Button type="submit">Sign In</Button>
-          <Button type="button" buttonType="google" onClick={logGoogleUser}>
+          <Button type="button" buttonType="google" onClick={signInWithGoogle}>
             Sign in with Google
           </Button>
         </div>
